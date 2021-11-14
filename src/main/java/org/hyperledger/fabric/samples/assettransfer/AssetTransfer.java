@@ -236,4 +236,30 @@ public final class AssetTransfer implements ContractInterface {
 
         return response;
     }
+
+    /**
+     * Duplicates an asset and assign it to a new owner.
+     * 
+     * @param ctx the transaction context
+     * @param oldAssetID the ID of the asset to be duplicated
+     * @param newAssetID the new ID for the duplicated asset
+     * @param newOwner the new owner of the duplicated asset
+     * @return the duplicated asset
+     */
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public Asset DuplicateAsset(final Context ctx, final String oldAssetID, final String newAssetID, final String newOwner) {
+        
+        // read the old asset
+        Asset asset = ReadAsset(ctx, oldAssetID);
+
+        // check if the new asset id already exists
+        if (AssetExists(ctx, newAssetID)) {
+            String errorMessage = String.format("Asset %s already exists", newAssetID);
+            System.out.println(errorMessage);
+            throw new ChaincodeException(errorMessage, AssetTransferErrors.ASSET_ALREADY_EXISTS.toString());
+        }
+        
+        // duplicate the asset and return it
+        return CreateAsset(ctx, newAssetID, asset.getColor(), asset.getSize(), newOwner, asset.getAppraisedValue());
+    }
 }
