@@ -302,4 +302,58 @@ public final class AssetTransferTest {
             assertThat(((ChaincodeException) thrown).getPayload()).isEqualTo("ASSET_NOT_FOUND".getBytes());
         }
     }
+
+    @Nested
+    class DuplicateAssetTransaction {
+
+        @Test
+        public void whenAssetDoesNotExist() {
+            AssetTransfer contract = new AssetTransfer();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("asset1")).thenReturn("");
+            Throwable thrown = catchThrowable(() -> {
+                contract.DuplicateAsset(ctx, "asset1", "asset2", "owner1");
+            });
+
+            assertThat(thrown).isInstanceOf(ChaincodeException.class).hasNoCause()
+                    .hasMessage("Asset asset1 does not exist");
+            assertThat(((ChaincodeException) thrown).getPayload())
+                    .isEqualTo("ASSET_NOT_FOUND".getBytes()); 
+        }
+
+        @Test
+        public void whenNewAssetIdAlreadyExist() {
+            AssetTransfer contract = new AssetTransfer();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("asset1"))
+                    .thenReturn("{ \"assetID\": \"asset1\", \"color\": \"color1\", \"size\": 1, \"owner\": \"owner1\", \"appraisedValue\": 300 }");
+            Throwable thrown = catchThrowable(() -> {
+                contract.DuplicateAsset(ctx, "asset1", "asset1", "owner2");
+            });
+
+            assertThat(thrown).isInstanceOf(ChaincodeException.class).hasNoCause()
+                    .hasMessage("Asset asset1 already exists");
+            assertThat(((ChaincodeException) thrown).getPayload())
+                    .isEqualTo("ASSET_ALREADY_EXISTS".getBytes());
+        }
+
+        @Test
+        public void whenAssetCanDuplicate() {
+            AssetTransfer contract = new AssetTransfer();
+            Context ctx = mock(Context.class);
+            ChaincodeStub stub = mock(ChaincodeStub.class);
+            when(ctx.getStub()).thenReturn(stub);
+            when(stub.getStringState("asset1"))
+                    .thenReturn("{ \"assetID\": \"asset1\", \"color\": \"color1\", \"size\": 1, \"owner\": \"owner1\", \"appraisedValue\": 300 }");
+
+            assertThat(
+                    contract.DuplicateAsset(ctx, "asset1", "asset2", "owner2"))
+                    .isEqualTo(new Asset("asset2", "color1", 1, "owner2", 300));
+        }
+    }
+
 }
